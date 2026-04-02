@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>GPGPU: множество листьев (новая модель с текстурой, хвостом и освещением)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #fff; }
+        body { margin: 0; overflow: hidden;}
         #info {
             position: absolute;
             top: 10px;
@@ -538,6 +538,19 @@
             leafMaterial.uniforms.lightDir.value.set(lightDirHelper.x, lightDirHelper.y, v).normalize();
         });
         // ==================== КОНЕЦ ДОБАВЛЕННОГО БЛОКА ====================
+
+        // --- функция, создающая панорамный фон (skybox из одного изображения) ---
+        function addSkybox(scene) {
+            const loader = new THREE.TextureLoader();
+            const texture = loader.load('Public/textures/skybox/panorama.png');
+            
+            // Указываем, что это равнопрямоугольная панорама (360°)
+            texture.mapping = THREE.EquirectangularMapping;
+            
+            // Устанавливаем текстуру как фон сцены
+            scene.background = texture;
+        }
+        addSkybox(scene);
 
         // Вращение камеры мышью
         let isMouseDown = false;
