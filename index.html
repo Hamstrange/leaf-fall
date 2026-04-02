@@ -41,7 +41,6 @@
         const numLeaves = gridSize * gridSize;
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(30, 20, 50);
@@ -509,7 +508,7 @@
         gui.add(params, 'velTorqueFactor', 0, 100, 1).name('Пост. момент').onChange(v => angVelVar.material.uniforms.velTorqueFactor.value = v);
         gui.add(params, 'speedThreshold', 0, 5, 0.1).name('Порог скорости').onChange(v => angVelVar.material.uniforms.speedThreshold.value = v);
 
-        // ==================== ДОБАВЛЕННЫЙ БЛОК: Управление освещением ====================
+        //Управление освещением
         const lightingFolder = gui.addFolder('Освещение');
         lightingFolder.open();
 
@@ -537,17 +536,18 @@
         lightingFolder.add(lightDirHelper, 'z', -1, 1, 0.01).name('Light Dir Z').onChange(v => {
             leafMaterial.uniforms.lightDir.value.set(lightDirHelper.x, lightDirHelper.y, v).normalize();
         });
-        // ==================== КОНЕЦ ДОБАВЛЕННОГО БЛОКА ====================
 
         // --- функция, создающая панорамный фон (skybox из одного изображения) ---
         function addSkybox(scene) {
             const loader = new THREE.TextureLoader();
-            const texture = loader.load('Public/textures/skybox/panorama.png');
-            
-            // Указываем, что это равнопрямоугольная панорама (360°)
+            const texture = loader.load('Public/textures/skybox/panorama.png',
+                () => console.log('Текстура загружена'),
+                undefined,
+                (err) => console.error('Ошибка загрузки текстуры:', err)
+            );
             texture.mapping = THREE.EquirectangularMapping;
-            
-            // Устанавливаем текстуру как фон сцены
+            // Устанавливаем mapping для сферического отображения
+            texture.mapping = THREE.EquirectangularRefractionMapping;
             scene.background = texture;
         }
         addSkybox(scene);
