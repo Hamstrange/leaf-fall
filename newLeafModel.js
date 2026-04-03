@@ -325,7 +325,7 @@ export function createLeafMaterial() {
             float offsetY = cos(hinge * 0.5) * halfHeight;
 
             // ---- Новая позиция без поворота, но с преобразованием (x, y, z) -> (x, z, -y) ----
-            vec3 deformedPos = vec3(x_v, x_h, -(y_v + offsetY));
+            vec3 deformedPos = vec3(x_v, x_h - offsetY, -(y_v));
 
             // ---- Преобразование нормали так же: (nx, ny, nz) -> (nx, nz, -ny) ----
             vec3 normal_new = vec3(normal_old.x, normal_old.z, -normal_old.y);
