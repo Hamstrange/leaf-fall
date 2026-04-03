@@ -201,7 +201,7 @@ export function createLeafMaterial() {
     const yHeight = (R / Math.cos(a)) + 1.25 * R;
     const Hight = xWidth;
     const Lmax = yHeight / 2;
-    const halfHeight = yHeight / 2;      // половина высоты листа (для смещения центра)
+    const halfHeight = yHeight / 2;
 
     const uniforms = {
         texturePosition: { value: null },
@@ -213,8 +213,7 @@ export function createLeafMaterial() {
         Hight: { value: Hight },
         Lmax: { value: Lmax },
         angleV: { value: 0.2 },
-        halfHeight: { value: halfHeight },          // новый uniform
-        leafRotX: { value: -Math.PI / 2 },          // поворот на -90° вокруг X
+        halfHeight: { value: halfHeight },
         lightDir: { value: new THREE.Vector3(0, 1, 0).normalize() },
         lightColor: { value: new THREE.Color(0xffffff) },
         ambientColor: { value: new THREE.Color(0xBBBBBB) }
@@ -230,7 +229,6 @@ export function createLeafMaterial() {
         uniform float Lmax;
         uniform float angleV;
         uniform float halfHeight;
-        uniform float leafRotX;
 
         varying vec2 vUv;
         varying vec3 vWorldNormal;
@@ -321,33 +319,21 @@ export function createLeafMaterial() {
             vec3 dPos_global_dy = dPos_dyh * d_h_dy.y + dPos_dy;
             vec3 dPos_global_dz = dPos_dyh * d_h_dx.y + dPos_dz;
 
-            vec3 normal_local = normalize(cross(dPos_global_dx, dPos_global_dy));
+            vec3 normal_old = normalize(cross(dPos_global_dx, dPos_global_dy));
 
-            // ---- Смещение центра масс: cos(hinge/2) * halfHeight ----
+            // ---- Смещение центра масс ----
             float offsetY = cos(hinge * 0.5) * halfHeight;
 
-            vec3 deformedPos = vec3(x_v, y_v + offsetY, x_h);
+            // ---- Новая позиция без поворота, но с преобразованием (x, y, z) -> (x, z, -y) ----
+            vec3 deformedPos = vec3(x_v, x_h, -(y_v + offsetY));
 
-            // ---- Поворот всей модели на -90° вокруг X (согласование с физической моделью) ----
-            float cosRX = cos(leafRotX);
-            float sinRX = sin(leafRotX);
-            vec3 rotatedPos = vec3(
-                deformedPos.x,
-                deformedPos.y * cosRX - deformedPos.z * sinRX,
-                deformedPos.y * sinRX + deformedPos.z * cosRX
-            );
+            // ---- Преобразование нормали так же: (nx, ny, nz) -> (nx, nz, -ny) ----
+            vec3 normal_new = vec3(normal_old.x, normal_old.z, -normal_old.y);
 
-            // Поворачиваем нормаль так же
-            vec3 rotatedNormal = vec3(
-                normal_local.x,
-                normal_local.y * cosRX - normal_local.z * sinRX,
-                normal_local.y * sinRX + normal_local.z * cosRX
-            );
-
-            vec3 worldNormal = normalize(rotate(quat, rotatedNormal));
+            vec3 worldNormal = normalize(rotate(quat, normal_new));
             vWorldNormal = worldNormal;
 
-            vec3 finalPos = worldPos + rotate(quat, rotatedPos);
+            vec3 finalPos = worldPos + rotate(quat, deformedPos);
             gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos, 1.0);
         }
     `;
