@@ -5,6 +5,7 @@ import { createLeafGeometry, createLeafMaterial } from './newLeafModel.js';
 import { velocityShader, angVelShader, positionShader, rotationShader, hingeShader } from './shaders/leafShaders.js';
 import { initLeafTextures } from './utils/initLeafTextures.js';
 import { initLeafUniforms } from './utils/initLeafUniforms.js';
+import { setGPGPUDependencies } from './utils/setGPGPUDependencies.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -61,11 +62,13 @@ export class LeafField {
         this.rotationVar = this.gpuCompute.addVariable('textureRotation', rotationShader, this.rotTexture);
         this.hingeVar = this.gpuCompute.addVariable('textureHinge', hingeShader, this.hingeTexture);
 
-        this.gpuCompute.setVariableDependencies(this.velocityVar, [this.velocityVar, this.positionVar, this.rotationVar, this.hingeVar]);
-        this.gpuCompute.setVariableDependencies(this.angVelVar, [this.angVelVar, this.positionVar, this.rotationVar, this.velocityVar, this.hingeVar]);
-        this.gpuCompute.setVariableDependencies(this.positionVar, [this.positionVar, this.velocityVar]);
-        this.gpuCompute.setVariableDependencies(this.rotationVar, [this.rotationVar, this.angVelVar, this.positionVar]);
-        this.gpuCompute.setVariableDependencies(this.hingeVar, [this.hingeVar, this.positionVar, this.rotationVar, this.velocityVar]);
+        setGPGPUDependencies(this.gpuCompute, {
+            velocityVar: this.velocityVar,
+            angVelVar: this.angVelVar,
+            positionVar: this.positionVar,
+            rotationVar: this.rotationVar,
+            hingeVar: this.hingeVar
+        });
 
         const error = this.gpuCompute.init();
         if (error) console.error('GPGPU init error:', error);
