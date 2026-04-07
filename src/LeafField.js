@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GPUComputationRenderer } from 'three/addons/misc/GPUComputationRenderer.js';
 import { createLeafGeometry, createLeafMaterial } from './newLeafModel.js';
 import { velocityShader, angVelShader, positionShader, rotationShader, hingeShader } from './shaders/leafShaders.js';
+import { initLeafTextures } from './utils/initLeafTextures.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -44,7 +45,17 @@ export class LeafField {
         this.hingeTexture = this.gpuCompute.createTexture();
         this.paramsTexture = this.gpuCompute.createTexture();
 
-        this.initTextures();
+        // Инициализация текстур вынесена в отдельную функцию
+        initLeafTextures({
+            numLeaves: this.numLeaves,
+            params: this.params,
+            posTexture: this.posTexture,
+            velTexture: this.velTexture,
+            rotTexture: this.rotTexture,
+            angVelTexture: this.angVelTexture,
+            hingeTexture: this.hingeTexture,
+            paramsTexture: this.paramsTexture
+        });
 
         // velocityVar
         this.velocityVar = this.gpuCompute.addVariable('textureVelocity', velocityShader, this.velTexture);
@@ -115,61 +126,6 @@ export class LeafField {
         this.material.uniforms.textureRotation.value = this.rotTexture;
         this.material.uniforms.textureHinge.value = this.hingeTexture;
         this.material.uniforms.textureParams.value = this.paramsTexture;
-    }
-
-    initTextures() {
-        const posData = this.posTexture.image.data;
-        const velData = this.velTexture.image.data;
-        const rotData = this.rotTexture.image.data;
-        const angVelData = this.angVelTexture.image.data;
-        const hingeData = this.hingeTexture.image.data;
-        const paramsData = this.paramsTexture.image.data;
-
-        for (let i = 0; i < this.numLeaves; i++) {
-            const i4 = i * 4;
-            posData[i4] = (Math.random() - 0.5) * 60;
-            posData[i4 + 1] = this.params.minResetY + Math.random() * (this.params.maxResetY - this.params.minResetY);
-            posData[i4 + 2] = (Math.random() - 0.5) * 60;
-            posData[i4 + 3] = 1.0;
-
-            velData[i4] = 0;
-            velData[i4 + 1] = 0;
-            velData[i4 + 2] = 0;
-            velData[i4 + 3] = 1.0;
-
-            const angle = Math.random() * Math.PI * 2;
-            const axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
-            const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-            rotData[i4] = q.x;
-            rotData[i4 + 1] = q.y;
-            rotData[i4 + 2] = q.z;
-            rotData[i4 + 3] = q.w;
-
-            angVelData[i4] = 0;
-            angVelData[i4 + 1] = 0;
-            angVelData[i4 + 2] = 0;
-            angVelData[i4 + 3] = 1.0;
-
-            hingeData[i4] = this.params.startAngle * Math.PI / 180;
-            hingeData[i4 + 1] = 0.0;
-            hingeData[i4 + 2] = 0.0;
-            hingeData[i4 + 3] = 1.0;
-        }
-
-        for (let i = 0; i < this.numLeaves; i++) {
-            const i4 = i * 4;
-            paramsData[i4] = 0.75 + Math.random() * 0.3;
-            paramsData[i4 + 1] = 1.0;
-            paramsData[i4 + 2] = 0.2;
-            paramsData[i4 + 3] = 0.0;
-        }
-
-        this.posTexture.needsUpdate = true;
-        this.velTexture.needsUpdate = true;
-        this.rotTexture.needsUpdate = true;
-        this.angVelTexture.needsUpdate = true;
-        this.hingeTexture.needsUpdate = true;
-        this.paramsTexture.needsUpdate = true;
     }
 
     update(delta, time) {
