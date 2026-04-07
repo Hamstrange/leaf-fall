@@ -7,6 +7,7 @@ import { initLeafTextures } from './utils/initLeafTextures.js';
 import { initLeafUniforms } from './utils/initLeafUniforms.js';
 import { setGPGPUDependencies } from './utils/setGPGPUDependencies.js';
 import { defaultPhysicsParams } from './config/physicsParams.js';
+import { createLeafInstances } from './utils/createLeafInstances.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -17,9 +18,9 @@ export class LeafField {
 
         this.geometry = createLeafGeometry();
         this.material = createLeafMaterial();
-        this.mesh = new THREE.InstancedMesh(this.geometry, this.material, this.numLeaves);
-        scene.add(this.mesh);
+        this.mesh = createLeafInstances(this.scene, this.geometry, this.material, this.numLeaves);
 
+        // Параметры физики из конфига
         this.params = { ...defaultPhysicsParams };
 
         this.gpuCompute = new GPUComputationRenderer(this.gridSize, this.gridSize, this.renderer);
