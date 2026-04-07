@@ -6,6 +6,7 @@ import { velocityShader, angVelShader, positionShader, rotationShader, hingeShad
 import { initLeafTextures } from './utils/initLeafTextures.js';
 import { initLeafUniforms } from './utils/initLeafUniforms.js';
 import { setGPGPUDependencies } from './utils/setGPGPUDependencies.js';
+import { defaultPhysicsParams } from './config/physicsParams.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -19,22 +20,7 @@ export class LeafField {
         this.mesh = new THREE.InstancedMesh(this.geometry, this.material, this.numLeaves);
         scene.add(this.mesh);
 
-        this.params = {
-            gravity: -10.0,
-            damping: 0.99,
-            drag: 10.0,
-            threshold: -15.0,
-            minResetY: 5.0,
-            maxResetY: 20.0,
-            startAngle: 170.0,
-            targetAngle: 180.0,
-            elasticity: 0.05,
-            momentFactor: 0.01,
-            torqueFactor: 0.1,
-            angularDamping: 0.99,
-            velTorqueFactor: 50.0,
-            speedThreshold: 2,
-        };
+        this.params = { ...defaultPhysicsParams };
 
         this.gpuCompute = new GPUComputationRenderer(this.gridSize, this.gridSize, this.renderer);
 
@@ -81,6 +67,7 @@ export class LeafField {
             hingeVar: this.hingeVar
         }, this.params);
 
+        // Передаём текстуры в материал
         this.material.uniforms.texturePosition.value = this.posTexture;
         this.material.uniforms.textureRotation.value = this.rotTexture;
         this.material.uniforms.textureHinge.value = this.hingeTexture;
