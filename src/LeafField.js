@@ -4,6 +4,7 @@ import { GPUComputationRenderer } from 'three/addons/misc/GPUComputationRenderer
 import { createLeafGeometry, createLeafMaterial } from './newLeafModel.js';
 import { velocityShader, angVelShader, positionShader, rotationShader, hingeShader } from './shaders/leafShaders.js';
 import { initLeafTextures } from './utils/initLeafTextures.js';
+import { initLeafUniforms } from './utils/initLeafUniforms.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -17,7 +18,6 @@ export class LeafField {
         this.mesh = new THREE.InstancedMesh(this.geometry, this.material, this.numLeaves);
         scene.add(this.mesh);
 
-        // Параметры физики (как в исходном)
         this.params = {
             gravity: -10.0,
             damping: 0.99,
@@ -35,7 +35,6 @@ export class LeafField {
             speedThreshold: 2,
         };
 
-        // GPGPU
         this.gpuCompute = new GPUComputationRenderer(this.gridSize, this.gridSize, this.renderer);
 
         this.posTexture = this.gpuCompute.createTexture();
@@ -45,7 +44,6 @@ export class LeafField {
         this.hingeTexture = this.gpuCompute.createTexture();
         this.paramsTexture = this.gpuCompute.createTexture();
 
-        // Инициализация текстур вынесена в отдельную функцию
         initLeafTextures({
             numLeaves: this.numLeaves,
             params: this.params,
@@ -57,22 +55,12 @@ export class LeafField {
             paramsTexture: this.paramsTexture
         });
 
-        // velocityVar
         this.velocityVar = this.gpuCompute.addVariable('textureVelocity', velocityShader, this.velTexture);
-
-        // angVelVar
         this.angVelVar = this.gpuCompute.addVariable('textureAngularVelocity', angVelShader, this.angVelTexture);
-
-        // positionVar
         this.positionVar = this.gpuCompute.addVariable('texturePosition', positionShader, this.posTexture);
-
-        // rotationVar
         this.rotationVar = this.gpuCompute.addVariable('textureRotation', rotationShader, this.rotTexture);
-
-        // hingeVar
         this.hingeVar = this.gpuCompute.addVariable('textureHinge', hingeShader, this.hingeTexture);
 
-        // Зависимости
         this.gpuCompute.setVariableDependencies(this.velocityVar, [this.velocityVar, this.positionVar, this.rotationVar, this.hingeVar]);
         this.gpuCompute.setVariableDependencies(this.angVelVar, [this.angVelVar, this.positionVar, this.rotationVar, this.velocityVar, this.hingeVar]);
         this.gpuCompute.setVariableDependencies(this.positionVar, [this.positionVar, this.velocityVar]);
@@ -82,46 +70,14 @@ export class LeafField {
         const error = this.gpuCompute.init();
         if (error) console.error('GPGPU init error:', error);
 
-        // Установка uniform-ов (как в исходном)
-        const targetAngleRad = this.params.targetAngle * Math.PI / 180;
-        const startAngleRadVal = this.params.startAngle * Math.PI / 180;
+        initLeafUniforms({
+            velocityVar: this.velocityVar,
+            angVelVar: this.angVelVar,
+            positionVar: this.positionVar,
+            rotationVar: this.rotationVar,
+            hingeVar: this.hingeVar
+        }, this.params);
 
-        this.velocityVar.material.uniforms.g = { value: this.params.gravity };
-        this.velocityVar.material.uniforms.threshold = { value: this.params.threshold };
-        this.velocityVar.material.uniforms.damping = { value: this.params.damping };
-        this.velocityVar.material.uniforms.drag = { value: this.params.drag };
-        this.velocityVar.material.uniforms.delta = { value: 0.0 };
-
-        this.angVelVar.material.uniforms.threshold = { value: this.params.threshold };
-        this.angVelVar.material.uniforms.drag = { value: this.params.drag };
-        this.angVelVar.material.uniforms.torqueFactor = { value: this.params.torqueFactor };
-        this.angVelVar.material.uniforms.angularDamping = { value: this.params.angularDamping };
-        this.angVelVar.material.uniforms.leafHeight = { value: 3.0 };
-        this.angVelVar.material.uniforms.leafWidth = { value: 2.0 };
-        this.angVelVar.material.uniforms.velTorqueFactor = { value: this.params.velTorqueFactor };
-        this.angVelVar.material.uniforms.speedThreshold = { value: this.params.speedThreshold };
-        this.angVelVar.material.uniforms.delta = { value: 0.0 };
-
-        this.positionVar.material.uniforms.threshold = { value: this.params.threshold };
-        this.positionVar.material.uniforms.minResetY = { value: this.params.minResetY };
-        this.positionVar.material.uniforms.maxResetY = { value: this.params.maxResetY };
-        this.positionVar.material.uniforms.time = { value: 0.0 };
-        this.positionVar.material.uniforms.delta = { value: 0.0 };
-
-        this.rotationVar.material.uniforms.threshold = { value: this.params.threshold };
-        this.rotationVar.material.uniforms.time = { value: 0.0 };
-        this.rotationVar.material.uniforms.delta = { value: 0.0 };
-
-        this.hingeVar.material.uniforms.threshold = { value: this.params.threshold };
-        this.hingeVar.material.uniforms.targetAngle = { value: targetAngleRad };
-        this.hingeVar.material.uniforms.elasticity = { value: this.params.elasticity };
-        this.hingeVar.material.uniforms.momentFactor = { value: this.params.momentFactor };
-        this.hingeVar.material.uniforms.startAngle = { value: startAngleRadVal };
-        this.hingeVar.material.uniforms.drag = { value: this.params.drag };
-        this.hingeVar.material.uniforms.leafHeight = { value: 3.0 };
-        this.hingeVar.material.uniforms.delta = { value: 0.0 };
-
-        // Передаём текстуры в материал
         this.material.uniforms.texturePosition.value = this.posTexture;
         this.material.uniforms.textureRotation.value = this.rotTexture;
         this.material.uniforms.textureHinge.value = this.hingeTexture;
@@ -146,7 +102,6 @@ export class LeafField {
         this.material.uniforms.textureParams.value = this.paramsTexture;
     }
 
-    // Методы для GUI
     updateGravity(v) { this.params.gravity = v; this.velocityVar.material.uniforms.g.value = v; }
     updateDamping(v) { this.params.damping = v; this.velocityVar.material.uniforms.damping.value = v; }
     updateDrag(v) { this.params.drag = v; this.velocityVar.material.uniforms.drag.value = v; this.angVelVar.material.uniforms.drag.value = v; this.hingeVar.material.uniforms.drag.value = v; }
