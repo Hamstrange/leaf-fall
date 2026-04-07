@@ -8,6 +8,7 @@ import { initLeafUniforms } from './utils/initLeafUniforms.js';
 import { setGPGPUDependencies } from './utils/setGPGPUDependencies.js';
 import { defaultPhysicsParams } from './config/physicsParams.js';
 import { createLeafInstances } from './utils/createLeafInstances.js';
+import { addGUIMethods } from './mixins/leafFieldGUIMethods.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
@@ -20,7 +21,6 @@ export class LeafField {
         this.material = createLeafMaterial();
         this.mesh = createLeafInstances(this.scene, this.geometry, this.material, this.numLeaves);
 
-        // Параметры физики из конфига
         this.params = { ...defaultPhysicsParams };
 
         this.gpuCompute = new GPUComputationRenderer(this.gridSize, this.gridSize, this.renderer);
@@ -68,7 +68,6 @@ export class LeafField {
             hingeVar: this.hingeVar
         }, this.params);
 
-        // Передаём текстуры в материал
         this.material.uniforms.texturePosition.value = this.posTexture;
         this.material.uniforms.textureRotation.value = this.rotTexture;
         this.material.uniforms.textureHinge.value = this.hingeTexture;
@@ -92,22 +91,6 @@ export class LeafField {
         this.material.uniforms.textureHinge.value = this.gpuCompute.getCurrentRenderTarget(this.hingeVar).texture;
         this.material.uniforms.textureParams.value = this.paramsTexture;
     }
-
-    updateGravity(v) { this.params.gravity = v; this.velocityVar.material.uniforms.g.value = v; }
-    updateDamping(v) { this.params.damping = v; this.velocityVar.material.uniforms.damping.value = v; }
-    updateDrag(v) { this.params.drag = v; this.velocityVar.material.uniforms.drag.value = v; this.angVelVar.material.uniforms.drag.value = v; this.hingeVar.material.uniforms.drag.value = v; }
-    updateThreshold(v) { this.params.threshold = v; this.velocityVar.material.uniforms.threshold.value = v; this.angVelVar.material.uniforms.threshold.value = v; this.positionVar.material.uniforms.threshold.value = v; this.rotationVar.material.uniforms.threshold.value = v; this.hingeVar.material.uniforms.threshold.value = v; }
-    updateMinResetY(v) { this.params.minResetY = v; this.positionVar.material.uniforms.minResetY.value = v; }
-    updateMaxResetY(v) { this.params.maxResetY = v; this.positionVar.material.uniforms.maxResetY.value = v; }
-    updateStartAngle(v) { this.params.startAngle = v; this.hingeVar.material.uniforms.startAngle.value = v * Math.PI/180; }
-    updateTargetAngle(v) { this.params.targetAngle = v; this.hingeVar.material.uniforms.targetAngle.value = v * Math.PI/180; }
-    updateElasticity(v) { this.params.elasticity = v; this.hingeVar.material.uniforms.elasticity.value = v; }
-    updateMomentFactor(v) { this.params.momentFactor = v; this.hingeVar.material.uniforms.momentFactor.value = v; }
-    updateTorqueFactor(v) { this.params.torqueFactor = v; this.angVelVar.material.uniforms.torqueFactor.value = v; }
-    updateAngularDamping(v) { this.params.angularDamping = v; this.angVelVar.material.uniforms.angularDamping.value = v; }
-    updateVelTorqueFactor(v) { this.params.velTorqueFactor = v; this.angVelVar.material.uniforms.velTorqueFactor.value = v; }
-    updateSpeedThreshold(v) { this.params.speedThreshold = v; this.angVelVar.material.uniforms.speedThreshold.value = v; }
-    updateAmbientColor(r,g,b) { this.material.uniforms.ambientColor.value.set(r,g,b); }
-    updateLightColor(r,g,b) { this.material.uniforms.lightColor.value.set(r,g,b); }
-    updateLightDir(x,y,z) { this.material.uniforms.lightDir.value.set(x,y,z).normalize(); }
 }
+
+addGUIMethods(LeafField.prototype);
