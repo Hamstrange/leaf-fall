@@ -11,7 +11,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "vite-plugin-glsl": "^1.6.0"
   },
   "devDependencies": {
     "vite": "^7.3.1"
