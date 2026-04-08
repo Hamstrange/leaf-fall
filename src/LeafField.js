@@ -8,6 +8,7 @@ import { initLeafUniforms } from './utils/initLeafUniforms.js';
 import { setGPGPUDependencies } from './utils/setGPGPUDependencies.js';
 import { defaultPhysicsParams } from './config/physicsParams.js';
 import { createLeafInstances } from './utils/createLeafInstances.js';
+import { updateUniforms } from './utils/updateUniforms.js';
 import { addGUIMethods } from './mixins/leafFieldGUIMethods.js';
 
 export class LeafField {
@@ -75,14 +76,13 @@ export class LeafField {
     }
 
     update(delta, time) {
-        this.positionVar.material.uniforms.delta.value = delta;
-        this.velocityVar.material.uniforms.delta.value = delta;
-        this.angVelVar.material.uniforms.delta.value = delta;
-        this.rotationVar.material.uniforms.delta.value = delta;
-        this.hingeVar.material.uniforms.delta.value = delta;
-
-        this.positionVar.material.uniforms.time.value = time;
-        this.rotationVar.material.uniforms.time.value = time;
+        updateUniforms({
+            velocityVar: this.velocityVar,
+            angVelVar: this.angVelVar,
+            positionVar: this.positionVar,
+            rotationVar: this.rotationVar,
+            hingeVar: this.hingeVar
+        }, delta, time);
 
         this.gpuCompute.compute();
 
