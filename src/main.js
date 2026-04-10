@@ -1,6 +1,6 @@
 // src/main.js
 import * as THREE from 'three';
-import { LeafField } from './LeafField.js';
+import { LeafField } from './leaves/index.js';
 import { CameraController } from './CameraController.js';
 import { SceneManager } from './SceneManager.js';
 import { GUIManager } from './GUIManager.js';
@@ -15,7 +15,7 @@ const leafField = new LeafField(16, sceneManager.getScene(), sceneManager.getRen
 // GUI
 const guiManager = new GUIManager(leafField);
 
-// Контроллер камеры
+// Контроллер камеры 
 const cameraController = new CameraController(
     sceneManager.getCamera(), 
     sceneManager.getRenderer().domElement, 
