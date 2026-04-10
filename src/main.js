@@ -1,6 +1,7 @@
 // src/main.js
 import * as THREE from 'three';
 import { LeafField } from './leaves/index.js';
+import { TerrainManager } from './terrain/index.js';
 import { CameraController } from './CameraController.js';
 import { SceneManager } from './SceneManager.js';
 import { GUIManager } from './GUIManager.js';
@@ -11,6 +12,14 @@ sceneManager.setSkybox('Public/textures/skybox/panorama.png');
 
 // Создание поля листьев
 const leafField = new LeafField(16, sceneManager.getScene(), sceneManager.getRenderer());
+
+// Добавляем ландшафт
+const terrain = new TerrainManager(sceneManager.getScene(), sceneManager.getRenderer(), {
+    width: 300,
+    depth: 300,
+    segments: 256
+});
+terrain.init();
 
 // GUI
 const guiManager = new GUIManager(leafField);
@@ -33,6 +42,8 @@ function animate() {
     time += delta;
 
     leafField.update(delta, time);
+    terrain.update(delta);  
+
     sceneManager.getRenderer().render(sceneManager.getScene(), sceneManager.getCamera());
 }
 animate();
