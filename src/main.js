@@ -5,10 +5,19 @@ import { TerrainManager } from './terrain/index.js';
 import { CameraController } from './CameraController.js';
 import { SceneManager } from './SceneManager.js';
 import { GUIManager } from './GUIManager.js';
+import { LightingManager } from './LightingManager.js';
 
 // Инициализация сцены
 const sceneManager = new SceneManager();
+const scene = sceneManager.getScene();
+const renderer = sceneManager.getRenderer();
+
+// Скайбокс
 sceneManager.setSkybox('Public/textures/skybox/panorama.png');
+
+// Освещение
+const lighting = new LightingManager(scene);
+lighting.setupDefaultLights();
 
 // Создание поля листьев
 const leafField = new LeafField(16, sceneManager.getScene(), sceneManager.getRenderer());
