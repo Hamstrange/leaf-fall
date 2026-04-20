@@ -6,6 +6,8 @@ export class CameraController {
         this.camera = camera;
         this.center = center;
         this.distance = distance;
+        this.minDistance = 1;
+        this.maxDistance = 500;
         
         this.isMouseDown = false;
         this.lastMouseX = 0;
@@ -28,6 +30,7 @@ export class CameraController {
         domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
         window.addEventListener('mousemove', this.onMouseMove.bind(this));
         window.addEventListener('mouseup', this.onMouseUp.bind(this));
+        domElement.addEventListener('wheel', this.onWheel.bind(this)); 
         domElement.style.userSelect = 'none';
     }
     
@@ -50,11 +53,7 @@ export class CameraController {
         this.lastMouseX = e.clientX;
         this.lastMouseY = e.clientY;
         
-        const x = this.center.x + this.distance * Math.sin(this.theta) * Math.cos(this.phi);
-        const y = this.center.y + this.distance * Math.cos(this.theta);
-        const z = this.center.z + this.distance * Math.sin(this.theta) * Math.sin(this.phi);
-        this.camera.position.set(x, y, z);
-        this.camera.lookAt(this.center);
+        this.updateCameraPosition();
     }
     
     onMouseUp(e) {
@@ -62,5 +61,22 @@ export class CameraController {
             this.isMouseDown = false;
             e.target.style.cursor = 'default';
         }
+    }
+    
+    onWheel(e) {
+        // Уменьшаем или увеличиваем расстояние
+        const delta = e.deltaY > 0 ? 1.05 : 0.95; // приближение/отдаление
+        this.distance *= delta;
+        this.distance = Math.max(this.minDistance, Math.min(this.maxDistance, this.distance));
+        this.updateCameraPosition();
+        e.preventDefault(); // предотвращаем прокрутку страницы
+    }
+    
+    updateCameraPosition() {
+        const x = this.center.x + this.distance * Math.sin(this.theta) * Math.cos(this.phi);
+        const y = this.center.y + this.distance * Math.cos(this.theta);
+        const z = this.center.z + this.distance * Math.sin(this.theta) * Math.sin(this.phi);
+        this.camera.position.set(x, y, z);
+        this.camera.lookAt(this.center);
     }
 }
