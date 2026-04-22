@@ -24,8 +24,8 @@ const leafField = new LeafField(16, sceneManager.getScene(), sceneManager.getRen
 
 // Добавляем ландшафт
 const terrain = new TerrainManager(sceneManager.getScene(), sceneManager.getRenderer(), {
-    width: 300,
-    depth: 300,
+    width: 800,
+    depth: 800,
     segments: 256
 });
 terrain.init();

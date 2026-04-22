@@ -17,16 +17,20 @@ const erosionShader = `
         float w = texture2D(u_watermap, uv).r;
         float s = texture2D(u_sedimentmap, uv).r;
         
-        // Находим направление потока (самый низкий сосед)
+        // Находим направление потока (самый низкий сосед, только внутри границ)
         vec2 flowDir = vec2(0.0);
         float minH = h;
         vec2 offsets[4] = vec2[](vec2(0.0, u_texelSize.y), vec2(0.0, -u_texelSize.y), 
-                                 vec2(u_texelSize.x, 0.0), vec2(-u_texelSize.x, 0.0));
+                                vec2(u_texelSize.x, 0.0), vec2(-u_texelSize.x, 0.0));
         for (int i = 0; i < 4; i++) {
-            float nh = texture2D(u_heightmap, uv + offsets[i]).r;
-            if (nh < minH) {
-                minH = nh;
-                flowDir = offsets[i];
+            vec2 uv2 = uv + offsets[i];
+            // Проверяем, что координата внутри [0,1]
+            if (uv2.x >= 0.0 && uv2.x <= 1.0 && uv2.y >= 0.0 && uv2.y <= 1.0) {
+                float nh = texture2D(u_heightmap, uv2).r;
+                if (nh < minH) {
+                    minH = nh;
+                    flowDir = offsets[i];
+                }
             }
         }
         
@@ -57,7 +61,7 @@ export class GPGPUErosion {
         this.renderer = renderer;
         this.width = width;
         this.height = height;
-        this.iterations = options.iterations || 30;
+        this.iterations = options.iterations || 10;
         
         // Нормализация высот в 0..1
         let minH = Infinity, maxH = -Infinity;
@@ -79,6 +83,13 @@ export class GPGPUErosion {
         this.heightTexture = this.gpuCompute.createTexture();
         this.waterTexture = this.gpuCompute.createTexture();
         this.sedimentTexture = this.gpuCompute.createTexture();
+
+        this.heightTexture.wrapS = THREE.ClampToEdgeWrapping;
+        this.heightTexture.wrapT = THREE.ClampToEdgeWrapping;
+        this.waterTexture.wrapS = THREE.ClampToEdgeWrapping;
+        this.waterTexture.wrapT = THREE.ClampToEdgeWrapping;
+        this.sedimentTexture.wrapS = THREE.ClampToEdgeWrapping;
+        this.sedimentTexture.wrapT = THREE.ClampToEdgeWrapping;
         
         this.initTexture(this.heightTexture, normalizedHeight);
         this.initTexture(this.waterTexture, new Float32Array(width * height).fill(0));
@@ -92,7 +103,7 @@ export class GPGPUErosion {
         // Uniforms
         const uniforms = this.heightVar.material.uniforms;
         uniforms['u_texelSize'] = { value: new THREE.Vector2(1 / width, 1 / height) };
-        uniforms['u_rainAmount'] = { value: options.rainAmount ?? 0.01 };
+        uniforms['u_rainAmount'] = { value: options.rainAmount ?? 0.001 };
         uniforms['u_evaporation'] = { value: options.evaporation ?? 0.005 };
         uniforms['u_erosionRate'] = { value: options.erosionRate ?? 0.02 };
         uniforms['u_depositionRate'] = { value: options.depositionRate ?? 0.01 };

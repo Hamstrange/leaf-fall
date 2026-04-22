@@ -9,17 +9,17 @@ export class TerrainManager {
         this.renderer = renderer;
         
         // Размеры ландшафта (мировые единицы)
-        this.width = options.width || 500;
-        this.depth = options.depth || 500;
+        this.width = options.width || 100;
+        this.depth = options.depth || 100;
         this.segments = options.segments || 256;    // детализация (количество сегментов на сторону)
         
         // Параметры шума (начальный рельеф)
         this.heightOptions = options.heightOptions || {
             scale: 0.02,
-            amplitude: 3,
+            amplitude: 12,
             octaves: 4,
-            persistence: 0.5,
-            lacunarity: 1.0
+            persistence: 0.7,
+            lacunarity: 1.2
         };
         
         // Параметры эрозии (передаются в GPGPUErosion)
@@ -61,7 +61,32 @@ export class TerrainManager {
         const erosion = new GPGPUErosion(
             this.renderer, verticesX, verticesZ, heightData, this.erosionOptions
         );
-        erosion.run();
+        // Функция для обновления геометрии после каждой итерации
+        const updateStep = (step) => {
+            const heights = erosion.getResultHeightData();
+            if (heights) {
+                this.updateGeometryFromHeightData(geometry, heights);
+                console.log(`Итерация ${step + 1} / ${this.erosionOptions.iterations}`);
+            }
+        };
+
+        /*/ Выполняем первую итерацию
+        erosion.gpuCompute.compute();
+        updateStep(0);
+
+        // Запускаем таймер для остальных итераций
+        for (let i = 1; i < this.erosionOptions.iterations; i++) {
+            setTimeout(() => {
+                //erosion.gpuCompute.compute();
+                updateStep(i);
+                if (i === this.erosionOptions.iterations - 1) {
+                    erosion.dispose();
+                }
+            }, i * 5000); // задержка 500 мс между шагами
+        }
+
+         НЕ вызываем erosion.run() – вместо него пошаговый цикл*/
+        /*erosion.run();
         const erodedHeights = erosion.getResultHeightData();
         erosion.dispose();
         
@@ -70,7 +95,7 @@ export class TerrainManager {
             this.updateGeometryFromHeightData(geometry, erodedHeights);
         } else {
             console.warn('Эрозия не дала результата, используются исходные высоты');
-        }
+        }*/
         
         // 6. Создание материала и меша
         const material = new THREE.MeshStandardMaterial({
