@@ -1,7 +1,8 @@
 // src/terrain/TerrainManager.js
 import * as THREE from 'three';
 import { generateHeightmap, applyHeightmap } from './noise.js';
-import { GPGPUErosion } from './erosion/GPGPUErosion.js';
+//import { GPGPUErosion } from './erosion/GPGPUErosion.js';
+import { HydraulicErosionCPU } from './erosion/HydraulicErosionCPU.js';
 
 export class TerrainManager {
     constructor(scene, renderer, options = {}) {
@@ -11,25 +12,24 @@ export class TerrainManager {
         // Размеры ландшафта (мировые единицы)
         this.width = options.width || 100;
         this.depth = options.depth || 100;
-        this.segments = options.segments || 256;    // детализация (количество сегментов на сторону)
+        this.segments = options.segments || 1024;    // детализация (количество сегментов на сторону)
         
-        // Параметры шума (начальный рельеф)
-        this.heightOptions = options.heightOptions || {
-            scale: 0.02,
-            amplitude: 12,
-            octaves: 4,
-            persistence: 0.7,
-            lacunarity: 1.2
+        this.erosionOptions = options.erosionOptions || {
+            iterations: 25,
+            rainAmount: 0.003,
+            evaporation: 0.2,
+            erosionRate: 0.003,
+            depositionRate: 0.001,
+            waterCapacity: 0.4
         };
         
-        // Параметры эрозии (передаются в GPGPUErosion)
         this.erosionOptions = options.erosionOptions || {
-            iterations: 30,
+            iterations: 10,
             rainAmount: 0.01,
-            evaporation: 0.05,
-            erosionRate: 0.01,
-            depositionRate: 0.001,
-            waterCapacity: 1.0
+            evaporation: 0.005,
+            erosionRate: 0.001,
+            depositionRate: 0.0001,
+            waterCapacity: 0.5
         };
         
         this.mesh = null;
@@ -57,45 +57,17 @@ export class TerrainManager {
             }
         }
         
-        // 4. Симуляция гидравлической эрозии на GPU
-        const erosion = new GPGPUErosion(
-            this.renderer, verticesX, verticesZ, heightData, this.erosionOptions
-        );
-        // Функция для обновления геометрии после каждой итерации
-        const updateStep = (step) => {
-            const heights = erosion.getResultHeightData();
-            if (heights) {
-                this.updateGeometryFromHeightData(geometry, heights);
-                console.log(`Итерация ${step + 1} / ${this.erosionOptions.iterations}`);
-            }
-        };
+        // 4. Гидравлическая эрозия на CPU
+        const erosionCPU = new HydraulicErosionCPU(heightData, verticesX, verticesZ, this.erosionOptions);
+        erosionCPU.run();
+        const erodedHeights = erosionCPU.getResult();
 
-        /*/ Выполняем первую итерацию
-        erosion.gpuCompute.compute();
-        updateStep(0);
-
-        // Запускаем таймер для остальных итераций
-        for (let i = 1; i < this.erosionOptions.iterations; i++) {
-            setTimeout(() => {
-                //erosion.gpuCompute.compute();
-                updateStep(i);
-                if (i === this.erosionOptions.iterations - 1) {
-                    erosion.dispose();
-                }
-            }, i * 5000); // задержка 500 мс между шагами
-        }
-
-         НЕ вызываем erosion.run() – вместо него пошаговый цикл*/
-        /*erosion.run();
-        const erodedHeights = erosion.getResultHeightData();
-        erosion.dispose();
-        
-        // 5. Применение эродированных высот к геометрии (если успешно)
+        // 5. Применение эродированных высот
         if (erodedHeights) {
             this.updateGeometryFromHeightData(geometry, erodedHeights);
         } else {
             console.warn('Эрозия не дала результата, используются исходные высоты');
-        }*/
+        }
         
         // 6. Создание материала и меша
         const material = new THREE.MeshStandardMaterial({
