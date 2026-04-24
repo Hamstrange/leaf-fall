@@ -24,7 +24,7 @@ export class TerrainManager {
         };
         
         this.erosionOptions = options.erosionOptions || {
-            iterations: 10,
+            iterations: 50,
             rainAmount: 0.01,
             evaporation: 0.005,
             erosionRate: 0.001,
