@@ -12,7 +12,7 @@ export class TerrainManager {
         // Размеры ландшафта (мировые единицы)
         this.width = options.width || 100;
         this.depth = options.depth || 100;
-        this.segments = options.segments || 1024;    // детализация (количество сегментов на сторону)
+        this.segments = options.segments || 256;    // детализация (количество сегментов на сторону)
         
         this.erosionOptions = options.erosionOptions || {
             iterations: 25,
@@ -25,10 +25,10 @@ export class TerrainManager {
         
         this.erosionOptions = options.erosionOptions || {
             iterations: 50,
-            rainAmount: 0.01,
-            evaporation: 0.005,
-            erosionRate: 0.001,
-            depositionRate: 0.0001,
+            rainAmount: 0.1,
+            evaporation: 0.05,
+            erosionRate: 0.01,
+            depositionRate: 0.01,
             waterCapacity: 0.5
         };
         

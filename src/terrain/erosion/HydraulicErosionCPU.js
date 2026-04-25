@@ -87,41 +87,42 @@ export class HydraulicErosionCPU {
                     }
 
                     if (minIdx !== idx) {
-                        // Разница напоров (уклон по напору)
+                        // Разность напоров
                         const headDiff = totalHead - minHead;
-                        if (headDiff <= 2.5) continue;
+                        if (headDiff <= 1) continue;
 
-                        // Ограничиваем уклон, чтобы избежать численных проблем
-                        let slope = headDiff;
-                        const MAX_SLOPE = 0.5;
+                        // Реальный уклон с учётом расстояния между ячейками (step)
+                        let slope = headDiff / this.step;
+                        const MAX_SLOPE = slope;
                         if (slope > MAX_SLOPE) slope = MAX_SLOPE;
 
-                        let flow = Math.min(w, slope * this.waterCapacity);
-                        if (flow > 0) {
-                            const ratio = flow / w; // доля перемещаемой воды
+                        // Доля воды и наносов, перетекающая за одну итерацию (от 0 до 1)
+                        let ratio = Math.min(1.0, slope * this.waterCapacity);
+                        if (ratio > 0) {
+                            const flow = w * ratio;          // количество воды, которое уходит
 
-                            // Эрозия (смыв грунта) – используем уклон по напору
+                            // Эрозия (смыв грунта)
                             let erosion = flow * slope * this.erosionRate;
-                            if (erosion > h) erosion = h;
+                            if (erosion > h) erosion = h;    // не больше, чем есть грунта
 
-                            // Осаждение наносов из воды в текущей ячейке
+                            // Осаждение наносов в текущей ячейке
                             const deposit = s * this.depositionRate;
 
-                            // Изменяем высоты
+                            // Обновляем высоты (во временном массиве)
                             newHeight[idx] -= erosion;
                             newHeight[minIdx] += deposit;
 
-                            // Обновляем воду и наносы в текущей ячейке
+                            // Обновляем наносы и воду в текущей ячейке
                             s += erosion;
                             s -= deposit;
                             w -= flow;
 
-                            // Пропорциональный перенос наносов в соседнюю ячейку
+                            // Пропорциональный перенос наносов (та же доля ratio)
                             const transportedSediment = s * ratio;
                             sediment[minIdx] += transportedSediment;
                             sediment[idx] = s - transportedSediment;
 
-                            // Перенос воды
+                            // Перенос воды в соседнюю ячейку
                             water[minIdx] += flow;
                             water[idx] = w;
                         }
