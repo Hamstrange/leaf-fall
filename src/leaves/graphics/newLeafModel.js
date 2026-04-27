@@ -51,23 +51,37 @@ function createLeafTexture(R, a) {
 
     for (let i = 1; i <= targetCount; i++) {
         const baseY = minY + i * stepY;
-        const offset = (Math.random() * 2 - 1) * maxOffset;
-        let y = baseY + offset;
-        y = Math.max(minY, Math.min(maxY, y));
 
-        let Vx, Vy;
-        if (y < 0) {
-            const d = -y * cosA + Math.sqrt(Math.max(0, R*R - y*y * sinA*sinA));
-            Vx = sinA * k * d;
-            Vy = y + verticalFactor * cosA * k * d;
-        } else {
-            const factor = k * R * (Ytop - y) / Ytop;
-            Vx = sinA * factor;
-            Vy = y + verticalFactor * cosA * factor;
-        }
+        // Генерируем независимые смещения для левой и правой жилки
+        const offsetL = (Math.random() * 2 - 1) * maxOffset;
+        const offsetR = (Math.random() * 2 - 1) * maxOffset;
 
-        const leftStart = toUV(0, y);
-        const leftEnd = toUV(-Vx, Vy);
+        let yL = baseY + offsetL;
+        let yR = baseY + offsetR;
+        yL = Math.max(minY, Math.min(maxY, yL));
+        yR = Math.max(minY, Math.min(maxY, yR));
+
+        // Вычисление конечной точки для заданной y (Vx, Vy)
+        const computeV = (y) => {
+            if (y < 0) {
+                const d = -y * cosA + Math.sqrt(Math.max(0, R * R - y * y * sinA * sinA));
+                const Vx = sinA * k * d;
+                const Vy = y + verticalFactor * cosA * k * d;
+                return { Vx, Vy };
+            } else {
+                const factor = k * R * (Ytop - y) / Ytop;
+                const Vx = sinA * factor;
+                const Vy = y + verticalFactor * cosA * factor;
+                return { Vx, Vy };
+            }
+        };
+
+        const left = computeV(yL);
+        const right = computeV(yR);
+
+        // Левая жилка (из точки (0, yL) в (-left.Vx, left.Vy))
+        const leftStart = toUV(0, yL);
+        const leftEnd = toUV(-left.Vx, left.Vy);
         ctx.beginPath();
         ctx.moveTo(leftStart.u * canvas.width, (1 - leftStart.v) * canvas.height);
         ctx.lineTo(leftEnd.u * canvas.width, (1 - leftEnd.v) * canvas.height);
@@ -75,9 +89,11 @@ function createLeafTexture(R, a) {
         ctx.strokeStyle = '#113711ff';
         ctx.stroke();
 
-        const rightEnd = toUV(Vx, Vy);
+        // Правая жилка (из точки (0, yR) в (right.Vx, right.Vy))
+        const rightStart = toUV(0, yR);
+        const rightEnd = toUV(right.Vx, right.Vy);
         ctx.beginPath();
-        ctx.moveTo(leftStart.u * canvas.width, (1 - leftStart.v) * canvas.height);
+        ctx.moveTo(rightStart.u * canvas.width, (1 - rightStart.v) * canvas.height);
         ctx.lineTo(rightEnd.u * canvas.width, (1 - rightEnd.v) * canvas.height);
         ctx.stroke();
     }
