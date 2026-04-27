@@ -1,12 +1,12 @@
 // src/LeafField.js
 import * as THREE from 'three';
-import { createLeafGeometry, createLeafMaterial } from './newLeafModel.js';
-import { defaultPhysicsParams } from './config/physicsParams.js';
-import { createLeafInstances } from './utils/createLeafInstances.js';
-import { initLeafUniforms } from './utils/initLeafUniforms.js';
-import { updateUniforms } from './utils/updateUniforms.js';
-import { addGUIMethods } from './mixins/leafFieldGUIMethods.js';
-import { GPGPUSimulation } from './GPGPUSimulation.js';
+import { createLeafGeometry, createLeafMaterial } from './graphics/newLeafModel.js';
+import { defaultPhysicsParams } from './physics/config/physicsParams.js';
+import { createLeafInstances } from './graphics/createLeafInstances.js';
+import { initLeafUniforms } from './physics/utils/initLeafUniforms.js';
+import { updateUniforms } from './physics/utils/updateUniforms.js';
+import { addGUIMethods } from './physics/mixins/leafFieldGUIMethods.js';
+import { GPGPUSimulation } from './physics/GPGPUSimulation.js';
 
 export class LeafField {
     constructor(gridSize, scene, renderer) {
