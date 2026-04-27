@@ -1,8 +1,7 @@
 // newLeafModel.js
 import * as THREE from 'three';
 
-// ---- Функции для построения геометрии (R=1, α=1, tailLength=0.2) ----
-
+// --- Текстура листа (canvas) ---
 function createLeafTexture(R, a) {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
@@ -20,9 +19,11 @@ function createLeafTexture(R, a) {
         return { u, v };
     };
 
+    // Заливка фона
     ctx.fillStyle = '#238423ff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    //Стебель (центральная линия)
     const yBottom = -1.25 * R;
     const yTop = R / Math.cos(a) - 0.25 * R;
     const stemWidth = 0.05 * R;
@@ -36,6 +37,7 @@ function createLeafTexture(R, a) {
     ctx.strokeStyle = '#113711ff';
     ctx.stroke();
 
+    //Отростки (жилки), отходящие от стебля
     const k = 0.9;
     const verticalFactor = 1.8;
     const sinA = Math.sin(a);
@@ -88,6 +90,7 @@ function createLeafTexture(R, a) {
     return texture;
 }
 
+// --- Геометрия листа (контур + хвост) ---
 function createUnifiedLeafGeometry(R, a, tailLenFactor) {
     const vertices = [];
     const uvs = [];
@@ -98,6 +101,7 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
     const yTip = R / Math.cos(a);
 
     const contourPoints = [];
+    // левая сторона от верхушки до основания
     const leftSteps = 4;
     for (let i = 0; i <= leftSteps; i++) {
         const t = i / leftSteps;
@@ -105,6 +109,7 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
         const y = (1 - t) * yTip + t * yBase;
         contourPoints.push(new THREE.Vector2(x, y));
     }
+    // дуга внизу (округлая часть)
     const arcSteps = 10;
     const startAngle = Math.PI/2 + a;
     const endAngle = 2.5 * Math.PI - a;
@@ -115,6 +120,7 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
         const y = R * Math.sin(angle);
         contourPoints.push(new THREE.Vector2(x, y));
     }
+    // правая сторона от основания до верхушки
     const rightSteps = 4;
     for (let i = 0; i <= rightSteps; i++) {
         const t = i / rightSteps;
@@ -124,6 +130,7 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
         contourPoints.push(new THREE.Vector2(x, y));
     }
 
+    // UV-отображение
     const xWidth = R * Math.sin(a);
     const yHeight = (R / Math.cos(a)) + 1.25 * R;
     const Hight = xWidth;
@@ -135,11 +142,13 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
         return { u, v };
     };
 
+    // Центральная точка листа (0,0)
     const centerIdx = vertices.length / 3;
     vertices.push(0, 0, 0);
     const centerUV = toUV(0, 0);
     uvs.push(centerUV.u, centerUV.v);
 
+    // Добавление точек контура
     const pointIndices = [];
     for (let p of contourPoints) {
         pointIndices.push(vertices.length / 3);
@@ -148,11 +157,13 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
         uvs.push(uv.u, uv.v);
     }
 
+    // Триангуляция (контур к центру)
     for (let i = 0; i < pointIndices.length - 1; i++) {
         indices.push(centerIdx, pointIndices[i], pointIndices[i+1]);
     }
     indices.push(centerIdx, pointIndices[pointIndices.length-1], pointIndices[0]);
 
+    // ---- Хвост (часть стебля ниже контура) ----
     const overlap = 0.02 * R;
     const attachY = -R + overlap;
     const tailLen = tailLenFactor * R;
@@ -184,7 +195,6 @@ function createUnifiedLeafGeometry(R, a, tailLenFactor) {
 }
 
 // ---- Экспортируемые функции ----
-
 export function createLeafGeometry() {
     const R = 1.0;
     const a = 1.0;
@@ -219,6 +229,7 @@ export function createLeafMaterial() {
         ambientColor: { value: new THREE.Color(0xBBBBBB) }
     };
 
+    // --- Шейдеры ---
     const vertexShader = `
         uniform sampler2D texturePosition;
         uniform sampler2D textureRotation;
@@ -235,6 +246,7 @@ export function createLeafMaterial() {
 
         #define PI 3.1415926538
 
+        // Функция изгиба (bend)
         vec2 bend(vec2 p, float a, float H, out vec2 dNew_dx, out vec2 dNew_dy) {
             if (abs(a) < 0.001) {
                 dNew_dx = vec2(1.0, 0.0);
@@ -273,6 +285,7 @@ export function createLeafMaterial() {
             return vec2(newX, newY);
         }
 
+        // Поворот кватернионом
         vec3 rotate(vec4 q, vec3 v) {
             return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
         }
@@ -319,6 +332,7 @@ export function createLeafMaterial() {
             vec3 dPos_global_dy = dPos_dyh * d_h_dy.y + dPos_dy;
             vec3 dPos_global_dz = dPos_dyh * d_h_dx.y + dPos_dz;
 
+            // Нормаль после изгиба
             vec3 normal_old = normalize(cross(dPos_global_dx, dPos_global_dy));
 
             // ---- Смещение центра масс ----
@@ -326,8 +340,6 @@ export function createLeafMaterial() {
 
             // ---- Новая позиция без поворота, но с преобразованием (x, y, z) -> (x, z, -y) ----
             vec3 deformedPos = vec3(x_v, x_h - offsetY, -(y_v));
-
-            // ---- Преобразование нормали так же: (nx, ny, nz) -> (nx, nz, -ny) ----
             vec3 normal_new = vec3(normal_old.x, normal_old.z, -normal_old.y);
 
             vec3 worldNormal = normalize(rotate(quat, normal_new));
