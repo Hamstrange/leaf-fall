@@ -1,7 +1,15 @@
 // newLeafModel.js
 import * as THREE from 'three';
-import vertexShaderCode from './shaders/leafDeformation.vert.glsl?raw';
+import bend2DSrc from '../../common/shaders/bend2D.glsl?raw';
+import rotateSrc from '../../common/shaders/rotate.glsl?raw';
+import coreVertSrc from './shaders/leafDeformationCore.vert.glsl?raw';
 import fragmentShaderCode from './shaders/leafLighting.frag.glsl?raw';
+
+const vertexShaderCode = `
+    ${bend2DSrc}
+    ${rotateSrc}
+    ${coreVertSrc}
+`;
 
 // --- Текстура листа (canvas) ---
 function createLeafTexture(R, a) {

@@ -1,3 +1,4 @@
+// src/leaves/graphics/shaders/leafDeformationCore.vert.glsl
 uniform sampler2D texturePosition;
 uniform sampler2D textureRotation;
 uniform sampler2D textureHinge;
@@ -11,51 +12,9 @@ uniform float halfHeight;
 varying vec2 vUv;
 varying vec3 vWorldNormal;
 
+#ifndef PI
 #define PI 3.1415926538
-
-// Функция изгиба (bend)
-vec2 bend(vec2 p, float a, float H, out vec2 dNew_dx, out vec2 dNew_dy) {
-    if (abs(a) < 0.001) {
-        dNew_dx = vec2(1.0, 0.0);
-        dNew_dy = vec2(0.0, 1.0);
-        return p;
-    }
-    float signA = sign(a);
-    float absA = abs(a);
-    float R = H / absA;
-    float dx = (PI - absA) / PI;
-    float dy = p.y / H;
-    float r = R + p.x * dx;
-    float C = cos(absA * dy);
-    float S = sin(absA * dy);
-    float newX = C * r - R;
-    float newY = S * r;
-
-    float dC_dy = -S * absA / H;
-    float dS_dy =  C * absA / H;
-    float dr_dx = dx;
-    float dr_dy = 0.0;
-
-    float dNewX_dx = C * dr_dx;
-    float dNewX_dy = dC_dy * r + C * dr_dy;
-    float dNewY_dx = S * dr_dx;
-    float dNewY_dy = dS_dy * r + S * dr_dy;
-
-    if (signA < 0.0) {
-        newX = -newX;
-        dNewX_dx = -dNewX_dx;
-        dNewX_dy = -dNewX_dy;
-    }
-
-    dNew_dx = vec2(dNewX_dx, dNewY_dx);
-    dNew_dy = vec2(dNewX_dy, dNewY_dy);
-    return vec2(newX, newY);
-}
-
-// Поворот кватернионом
-vec3 rotate(vec4 q, vec3 v) {
-    return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
-}
+#endif
 
 void main() {
     vUv = uv;
@@ -77,7 +36,7 @@ void main() {
     // ---- Горизонтальный изгиб (вокруг оси Z) ----
     vec2 p_h = vec2(localPos.z, localPos.y);
     vec2 d_h_dx, d_h_dy;
-    vec2 h = bend(p_h, angleH, Lmax, d_h_dx, d_h_dy);
+    vec2 h = bend2D(p_h, angleH, Lmax, d_h_dx, d_h_dy);
     float x_h = h.x;
     float y_h = h.y;
 
@@ -88,7 +47,7 @@ void main() {
     // ---- Вертикальный изгиб (вокруг оси X) ----
     vec2 p_v = vec2(localPos.x, y_h);
     vec2 d_v_dx, d_v_dy;
-    vec2 v = bend(p_v, angleV, Lmax, d_v_dx, d_v_dy);
+    vec2 v = bend2D(p_v, angleV, Lmax, d_v_dx, d_v_dy);
     float x_v = v.x;
     float y_v = v.y;
 
